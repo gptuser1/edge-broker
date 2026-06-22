@@ -1,0 +1,27 @@
+{
+  "name": "edge-hub-do",
+  "version": "0.1.0",
+  "description": "Real-time Pub/Sub message bus based on Cloudflare Workers + Durable Objects",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build": "wrangler build",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "durable-objects",
+    "pubsub",
+    "websocket",
+    "edge"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240501.0",
+    "typescript": "^5.4.0",
+    "wrangler": "^3.50.0"
+  }
+}

@@ -1,0 +1,15 @@
+name = "edge-hub-do"
+main = "src/index.ts"
+compatibility_date = "2026-06-01"
+
+[[durable_objects.bindings]]
+name = "TOPIC_DURABLE_OBJECT"
+class_name = "TopicHub"
+
+[[durable_objects.bindings]]
+name = "CLIENT_DURABLE_OBJECT"
+class_name = "ClientHub"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["TopicHub", "ClientHub"]
