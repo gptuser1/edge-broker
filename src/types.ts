@@ -1,7 +1,6 @@
 // Client State
 export interface ClientState {
-  topic: string;
-  ws: WebSocket | null;
+  topics: string[];
   connected: boolean;
 }
 
@@ -11,12 +10,20 @@ export interface Message {
   data: unknown;
   timestamp: number;
   expiresAt: number;
+  topic?: string;
+}
+
+// Retained message per topic
+export interface RetainedMessage {
+  data: unknown;
+  timestamp: number;
 }
 
 // Request body when publish
 export interface PublishRequest {
   data: unknown;
   ttl?: number;
+  retain?: boolean;
 }
 
 // Internal reg/unreg request between DOs
@@ -27,18 +34,26 @@ export interface InternalReg {
 // Internal push message from TopicHub to ClientHub
 export interface InternalMsg {
   msg: Message;
+  topic: string;
 }
 
 // Response sent to WS client on connect
 export interface SubResponse {
   success: boolean;
   clientId: string;
+  topics: string[];
 }
 
 // Base JSON response
 export interface BaseResponse {
   success: boolean;
   message?: string;
+}
+
+// WS control message from client
+export interface WsControlMessage {
+  type: "subscribe" | "unsubscribe";
+  topic: string;
 }
 
 // Env bindings for Worker
