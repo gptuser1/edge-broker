@@ -1,16 +1,10 @@
-// Client State
-export interface ClientState {
-  topics: string[];
-  connected: boolean;
-}
-
-// Message stored in TopicHub
+// Message stored per topic
 export interface Message {
   id: string;
   data: unknown;
   timestamp: number;
   expiresAt: number;
-  topic?: string;
+  topic: string;
 }
 
 // Retained message per topic
@@ -19,22 +13,17 @@ export interface RetainedMessage {
   timestamp: number;
 }
 
+// Topic state
+export interface TopicState {
+  messages: Message[];
+  retained?: RetainedMessage;
+}
+
 // Request body when publish
 export interface PublishRequest {
   data: unknown;
   ttl?: number;
   retain?: boolean;
-}
-
-// Internal reg/unreg request between DOs
-export interface InternalReg {
-  clientId: string;
-}
-
-// Internal push message from TopicHub to ClientHub
-export interface InternalMsg {
-  msg: Message;
-  topic: string;
 }
 
 // Response sent to WS client on connect
@@ -58,6 +47,5 @@ export interface WsControlMessage {
 
 // Env bindings for Worker
 export interface Env {
-  TOPIC_DURABLE_OBJECT: DurableObjectNamespace;
-  CLIENT_DURABLE_OBJECT: DurableObjectNamespace;
+  BROKER_DURABLE_OBJECT: DurableObjectNamespace;
 }

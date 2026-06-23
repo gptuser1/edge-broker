@@ -5,12 +5,10 @@
 ## 特点
 
 - ⚡ **实时推送**：WebSocket 实时消息推送，延迟极低
-- 🚀 **并行广播**：消息广播并行执行，大幅降低广播延迟
+- 🎯 **单 DO 架构**：单个 Broker DO 管理所有主题，架构极简
 - 💤 **Hibernatable WebSockets**：休眠模式大幅减少 DO 计算时间，节省成本
-- 🎯 **单实例保证**：Durable Objects 确保每个主题只有一个实例，状态一致
-- 💾 **状态持久化**：消息和客户端状态持久化到 DO storage，重启不丢失
+- 💾 **状态持久化**：消息持久化到 DO storage，重启不丢失
 - ⏰ **自动清理**：Alarms API 自动清理过期消息，无需手动维护
-- 🔄 **断线重连**：支持通过 clientId 恢复会话
 - 📌 **保留消息**：新订阅者立即获取最新值（Retained Message）
 - 🎛️ **多主题订阅**：单连接订阅多个主题，减少连接开销
 - 🆔 **自定义 Client ID**：支持自定义客户端 ID，便于管理
@@ -23,16 +21,13 @@ Client (WebSocket)
     ↓
 Worker (无状态，路由转发)
     ↓
-TopicHub (DO) - 管理主题、消息队列、客户端列表
-    ↓
-ClientHub (DO) - 每个客户端一个实例，管理 WebSocket 连接
+Broker (DO) - 单实例管理所有主题、消息和连接
 ```
 
 ### 核心组件
 
-- **TopicHub**：每个主题一个 DO 实例，维护消息队列和客户端 ID 集合
-- **ClientHub**：每个客户端一个 DO 实例，管理 WebSocket 连接和多主题订阅
-- **广播机制**：TopicHub 收到消息后，并行调用所有 ClientHub 推送
+- **Broker**：单个 DO 实例，管理所有主题的消息和 WebSocket 连接
+- **广播机制**：直接在内存中向对应主题的所有连接推送消息，零延迟
 
 ## 项目结构
 
@@ -42,8 +37,7 @@ edge-broker/
 │   ├── index.ts                    # 主入口，路由转发
 │   ├── types.ts                    # 类型定义
 │   └── durable-objects/
-│       ├── topic-hub.ts            # TopicHub DO
-│       └── client-hub.ts           # ClientHub DO
+│       └── broker.ts               # Broker DO
 ├── wrangler.toml                   # Wrangler 配置
 ├── tsconfig.json                   # TypeScript 配置
 ├── package.json
@@ -55,13 +49,13 @@ edge-broker/
 ### 发布消息
 
 ```bash
-curl -X POST "https://your-worker.workers.dev/pub?service=my-service" \
+curl -X POST "https://your-worker.workers.dev/pub?service=my-topic" \
   -H "Content-Type: application/json" \
   -d '{"data": "hello world", "ttl": 180, "retain": false}'
 ```
 
 **参数**：
-- `service`：主题/服务名称（URL 参数）
+- `service`：主题名称（URL 参数）
 - `data`：消息内容，可以是任意 JSON
 - `ttl`：消息过期时间（秒），默认 180
 - `retain`：是否保留为最新消息，新订阅者会立即收到，默认 false
@@ -78,13 +72,13 @@ curl -X POST "https://your-worker.workers.dev/pub?service=my-service" \
 
 ```javascript
 // 订阅单个主题
-const ws = new WebSocket("wss://your-worker.workers.dev/sub?service=my-service");
+const ws = new WebSocket("wss://your-worker.workers.dev/sub?service=my-topic");
 
 // 订阅多个主题（逗号分隔）
 const ws = new WebSocket("wss://your-worker.workers.dev/sub?service=topic1,topic2,topic3");
 
 // 使用自定义 clientId
-const ws = new WebSocket("wss://your-worker.workers.dev/sub?service=my-service&clientId=my-device-001");
+const ws = new WebSocket("wss://your-worker.workers.dev/sub?service=my-topic&clientId=my-device-001");
 
 ws.onopen = () => {
   console.log("Connected");
@@ -101,8 +95,8 @@ ws.onclose = () => {
 ```
 
 **参数**：
-- `service`：主题/服务名称，多个主题用逗号分隔（URL 参数）
-- `clientId`：自定义客户端 ID（可选，用于断线重连）
+- `service`：主题名称，多个主题用逗号分隔（URL 参数）
+- `clientId`：自定义客户端 ID（可选）
 
 **消息格式**：
 ```json
@@ -111,7 +105,7 @@ ws.onclose = () => {
   "data": "hello world",
   "timestamp": 1782133304088,
   "expiresAt": 1782133364088,
-  "topic": "my-service"
+  "topic": "my-topic"
 }
 ```
 
@@ -119,8 +113,8 @@ ws.onclose = () => {
 ```json
 {
   "success": true,
-  "clientId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  "topics": ["my-service"]
+  "clientId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "topics": ["my-topic"]
 }
 ```
 
@@ -140,14 +134,6 @@ ws.send(JSON.stringify({
   type: "unsubscribe",
   topic: "old-topic"
 }));
-```
-
-### 取消订阅 / 断开连接
-
-```bash
-curl -X POST "https://your-worker.workers.dev/stop-sub?service=my-service" \
-  -H "Content-Type: application/json" \
-  -d '{"clientId": "your-client-id"}'
 ```
 
 ## 开发与部署

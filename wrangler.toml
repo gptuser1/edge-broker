@@ -3,13 +3,14 @@ main = "src/index.ts"
 compatibility_date = "2026-06-01"
 
 [[durable_objects.bindings]]
-name = "TOPIC_DURABLE_OBJECT"
-class_name = "TopicHub"
-
-[[durable_objects.bindings]]
-name = "CLIENT_DURABLE_OBJECT"
-class_name = "ClientHub"
+name = "BROKER_DURABLE_OBJECT"
+class_name = "Broker"
 
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["TopicHub", "ClientHub"]
+
+[[migrations]]
+tag = "v2"
+deleted_classes = ["TopicHub", "ClientHub"]
+new_sqlite_classes = ["Broker"]
